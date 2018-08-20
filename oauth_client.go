@@ -125,3 +125,38 @@ func (s *oAuthClients) Create(ctx context.Context, organization string, options 
 
 	return oc, nil
 }
+
+type OAuthCLientDestroyOptions struct {
+	CLIENT_ID *string `jsonapi:"primary,oauth-client"`
+}
+
+func (o OAuthCLientDestroyOptions) valid() error {
+	if !validString(o.CLIENT_ID) {
+		return errors.New("CLIENT_ID required")
+	}
+	return nil
+}
+
+func (s *oAuthClients) Delete(ctx context.Context, organization string, options OAuthCLientDestroyOptions) (*OAuthClient, error) {
+	if !validStringID(&organization) {
+		return nil, errors.New("Invalid value for organization")
+	}
+	if err := options.valid(); err != nil {
+		return nil, err
+	}
+
+	u := fmt.Sprintf("organizations/%s/oauth-clients/%s", url.QueryEscape(organization), url.QueryEscape(*options.CLIENT_ID))
+
+	req, err := s.client.newRequest("DELETE", u, s)
+	if err != nil {
+		return nil, err
+	}
+
+	oc := &OAuthClient{}
+	err = s.client.do(ctx, req, oc)
+	if err != nil {
+		return nil, err
+	}
+
+	return oc, nil
+}
