@@ -138,15 +138,18 @@ func (o OAuthCLientDestroyOptions) valid() error {
 	return nil
 }
 
-func (s *oAuthClients) Delete(ctx context.Context, organization string, options OAuthCLientDestroyOptions) (*OAuthClient, error) {
-	if !validStringID(&organization) {
+func (s *oAuthClients) Delete(ctx context.Context, organization string, vcs_id string, options OAuthCLientDestroyOptions) (*OAuthClient, error) {
+	if !validString(&organization) {
 		return nil, errors.New("Invalid value for organization")
+	}
+	if !validString(&vcs_id) {
+		return nil, errors.New("Invalid value for vcs_id")
 	}
 	if err := options.valid(); err != nil {
 		return nil, err
 	}
 
-	u := fmt.Sprintf("organizations/%s/oauth-clients/%s", url.QueryEscape(organization), url.QueryEscape(*options.CLIENT_ID))
+	u := fmt.Sprintf("organizations/%s/oauth-clients/%s", url.QueryEscape(organization), url.QueryEscape(vcs_id))
 
 	req, err := s.client.newRequest("DELETE", u, s)
 	if err != nil {
