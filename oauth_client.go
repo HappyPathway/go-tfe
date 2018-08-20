@@ -19,7 +19,7 @@ var _ OAuthClients = (*oAuthClients)(nil)
 type OAuthClients interface {
 	// Create a VCS connection between an organization and a VCS provider.
 	Create(ctx context.Context, organization string, options OAuthClientCreateOptions) (*OAuthClient, error)
-	Delete(ctx context.Context, organizations string, options OAuthCLientDestroyOptions) (*OAuthClient, error)
+	Delete(ctx context.Context, organizations string, vcs_id string, options OAuthCLientDestroyOptions) (*OAuthClient, error)
 }
 
 // oAuthClients implements OAuthClients.
