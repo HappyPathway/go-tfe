@@ -19,7 +19,7 @@ var _ OAuthClients = (*oAuthClients)(nil)
 type OAuthClients interface {
 	// Create a VCS connection between an organization and a VCS provider.
 	Create(ctx context.Context, organization string, options OAuthClientCreateOptions) (*OAuthClient, error)
-	Delete(ctx context.Context, organizations string, vcs_id string, options OAuthCLientDestroyOptions) (*OAuthClient, error)
+	Delete(ctx context.Context, options OAuthCLientDestroyOptions) (*OAuthClient, error)
 }
 
 // oAuthClients implements OAuthClients.
@@ -128,7 +128,8 @@ func (s *oAuthClients) Create(ctx context.Context, organization string, options 
 }
 
 type OAuthCLientDestroyOptions struct {
-	CLIENT_ID *string `jsonapi:"primary,oauth-client"`
+	CLIENT_ID    *string `jsonapi:"primary,oauth-client"`
+	Organization *string `jsonapi:"primary,organization"`
 }
 
 func (o OAuthCLientDestroyOptions) valid() error {
@@ -138,18 +139,12 @@ func (o OAuthCLientDestroyOptions) valid() error {
 	return nil
 }
 
-func (s *oAuthClients) Delete(ctx context.Context, organization string, vcs_id string, options OAuthCLientDestroyOptions) (*OAuthClient, error) {
-	if !validString(&organization) {
-		return nil, errors.New("Invalid value for organization")
-	}
-	if !validString(&vcs_id) {
-		return nil, errors.New("Invalid value for vcs_id")
-	}
+func (s *oAuthClients) Delete(ctx context.Context, options OAuthCLientDestroyOptions) (*OAuthClient, error) {
 	if err := options.valid(); err != nil {
 		return nil, err
 	}
 
-	u := fmt.Sprintf("organizations/%s/oauth-clients/%s", url.QueryEscape(organization), url.QueryEscape(vcs_id))
+	u := fmt.Sprintf("oauth-clients/%s", url.QueryEscape(*options.CLIENT_ID))
 
 	req, err := s.client.newRequest("DELETE", u, s)
 	if err != nil {
@@ -157,9 +152,13 @@ func (s *oAuthClients) Delete(ctx context.Context, organization string, vcs_id s
 	}
 
 	oc := &OAuthClient{}
-	err = s.client.do(ctx, req, oc)
-	if err != nil {
+	err = s.client.do(ctx, req, nil)
+	if err != nil && err.Error() != "resource not found" {
 		return nil, err
+	}
+
+	if err != nil && err.Error() == "resource not found" {
+		return oc, nil
 	}
 
 	return oc, nil
