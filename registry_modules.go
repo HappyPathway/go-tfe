@@ -10,74 +10,54 @@ import (
 // Compile-time proof of interface implementation.
 var _ RegistryModules = (*registryModules)(nil)
 
-// OAuthClients describes all the OAuth client related methods that the
+// RegistryModules describes all the Registry Module related methods that the
 // Terraform Enterprise API supports.
 //
 // TFE API docs:
-// https://www.terraform.io/docs/enterprise/api/oauth-clients.html
+// https://www.terraform.io/docs/enterprise/api/modules.html
+//
 type RegistryModules interface {
 	// Create a VCS connection between an organization and a VCS provider.
-	Create(ctx context.Context, organization string, options RegistryModuleCreateOptions) (*RegistryModule, error)
+	Create(ctx context.Context, options RegistryModuleCreateOptions) (*RegistryModule, error)
 	Delete(ctx context.Context, organization string, module string, provider string) (*RegistryModule, error)
 }
 
-// oAuthClients implements OAuthClients.
+// registryModules implements RegistryModule.
 type registryModules struct {
 	client *Client
-}
-
-// OAuthClient represents a connection between an organization and a VCS
-// provider.
-type RegistryModulePermissions struct {
-	can_delete string `json:"can-delete"`
-	can_resync string `json:"can-resync"`
-	can_retry  string `json:"can-retry"`
 }
 
 type RegistryModule struct {
 	ID       string `jsonapi:"primary,id"`
 	Name     string `jsonapi:"attr,name"`
-	Token    string `jsonapi:"attr,vcs-repo,oauth-token-id"`
-	Repo     string `jsonapi:"attr,vcs-repo,identifier"`
 	Provider string `jsonapi:"attr,provider"`
-
-	// Relations
-	Organization              *Organization              `jsonapi:"relation,organization"`
-	RegistryModulePermissions *RegistryModulePermissions `jsonapi:"attr,permissions"`
 }
 
-// OAuthClientCreateOptions represents the options for creating an OAuth client.
+type RegistryModuleVCSRepo struct {
+	OAUTH_TOKEN_ID string `json:"oauth-token-id"`
+	IDENTIFIER     string `json:"identifier"`
+}
+
 type RegistryModuleCreateOptions struct {
 	// For internal use only!
-	Token *string `jsonapi:"attr,vcs-repo,oauth-token-id"`
-	Repo  *string `jsonapi:"attr,vcs-repo,identifier"`
-	ID    string  `jsonapi:"primary,id"`
+	VCSRepo *RegistryModuleVCSRepo `jsonapi:"attr,vcs-repo"`
 }
 
 func (o RegistryModuleCreateOptions) valid() error {
-	if !validString(o.Token) {
+	if o.VCSRepo == nil {
 		return errors.New("Token is required")
-	}
-	if !validString(o.Repo) {
-		return errors.New("Repo is required")
 	}
 	return nil
 }
 
 // Create a VCS connection between an organization and a VCS provider.
-func (s *registryModules) Create(ctx context.Context, organization string, options RegistryModuleCreateOptions) (*RegistryModule, error) {
-	if !validStringID(&organization) {
-		return nil, errors.New("Invalid value for organization")
-	}
+//
+func (s *registryModules) Create(ctx context.Context, options RegistryModuleCreateOptions) (*RegistryModule, error) {
 	if err := options.valid(); err != nil {
 		return nil, err
 	}
 
-	// Make sure we don't send a user provided ID.
-	options.ID = ""
-
-	u := fmt.Sprintf("registry-modules")
-	req, err := s.client.newRequest("POST", u, &options)
+	req, err := s.client.newRequest("POST", "registry-modules", &options)
 	if err != nil {
 		return nil, err
 	}

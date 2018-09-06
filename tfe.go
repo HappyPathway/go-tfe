@@ -86,6 +86,7 @@ type Client struct {
 	Policies              Policies
 	PolicyChecks          PolicyChecks
 	Runs                  Runs
+	RegistryModules       RegistryModules
 	SSHKeys               SSHKeys
 	StateVersions         StateVersions
 	Teams                 Teams
@@ -160,6 +161,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	client.Users = &users{client: client}
 	client.Variables = &variables{client: client}
 	client.Workspaces = &workspaces{client: client}
+	client.RegistryModules = &registryModules{client: client}
 
 	return client, nil
 }
